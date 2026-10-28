@@ -47,3 +47,7 @@ External scripts are blocked on the editor page. It uses local fonts, falling ba
 ## Conflicts and recovery
 
 If the website changes in another session while you are editing, publishing stops rather than overwriting it. Download your draft, reconnect to refresh, and reopen the draft before publishing. Published articles are public and saved in repository history. Keep confidential research in downloaded drafts until you intend to publish.
+
+## Delete a published paper
+
+Connect the editor, select the paper under Published papers, and click Delete paper. Check the title in the confirmation before confirming. The editor removes the article page, research listing, sitemap entry, and its PDF (unless another paper uses that PDF) together in one commit. Allow GitHub Pages a few minutes to publish the removal. Refresh the public site afterward. Earlier versions remain in GitHub history; search-engine caches and previously downloaded copies are not erased.
