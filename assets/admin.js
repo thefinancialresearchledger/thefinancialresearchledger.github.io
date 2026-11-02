@@ -1,10 +1,10 @@
 (() => {
   'use strict';
   const $=id=>document.getElementById(id), core=window.LedgerEditor;
-  let session=null, papers=[], selected=null, busy=false, dirty=false;
+  let session=null, papers=[], selected=null, busy=false, dirty=false, figures=[];
   const status=message=>{$('status').textContent=message;};
   function permissions(){ $('publish').disabled=!session||busy; $('save-bio').disabled=!session||busy; $('connect').disabled=busy; $('disconnect').disabled=busy; $('new').disabled=busy; $('papers').disabled=busy; $('delete-paper').disabled=!session||busy; $('delete-paper').hidden=!selected; }
-  function setBusy(value){busy=value;permissions();}
+  function setBusy(value){busy=value;$('paper-form').inert=value;$('bio-panel').inert=value;permissions();}
   function fail(error){status(error.message || 'Unable to save. Please try again.');}
   async function api(path,options={}){
     if(!session) throw new Error('Connect your website first.');
@@ -32,7 +32,8 @@
     papers.forEach(p=>$('papers').add(new Option(p.title,p.url)));
   }
   function loadPaper(paper){
-    selected=paper?{...paper}:null;
+    const nextFigures=core.validateFigures(paper?.figures);
+    selected=paper?{...paper}:null;figures=nextFigures;renderFigures();
     for(const id of ['title','date','summary','body'])$(id).value=paper?.[id]||'';
     if(!paper)$('date').value=new Date().toLocaleDateString('en-CA');
     $('topics').value=(paper?.topics||[]).join(', ');$('pdf').value='';
@@ -44,7 +45,7 @@
     const p={title:$('title').value.trim(),date:$('date').value,summary:$('summary').value.trim(),body:$('body').value.trim(),topics:$('topics').value.split(',').map(x=>x.trim()).filter(Boolean)};
     if(!p.title||!p.date||!p.summary)throw new Error('Add a title, publication date, and summary.');
     if(!p.body&&!$('pdf').files[0]&&!selected?.pdf)throw new Error('Add article text or attach a PDF before publishing.');
-    return {...selected,...p};
+    const paper={...selected,...p,figures:core.validateFigures(figures)};core.validatePlacement(paper);return paper;
   }
   function showPreview(p){
     const box=$('preview-content');box.replaceChildren();
@@ -52,7 +53,7 @@
     const meta=document.createElement('p');meta.className='muted';meta.textContent='Yongjin (Jin) Hwang · '+p.date;
     const summary=document.createElement('p');summary.textContent=p.summary;
     box.append(h,meta,summary);
-    for(const paragraph of p.body.split(/\n\s*\n/).filter(Boolean)){const e=document.createElement('p');e.textContent=paragraph;box.append(e);}
+    const content=document.createElement('div');content.className='article-body';content.innerHTML=core.renderBody(p,imagePrefix());box.append(content);
     if($('pdf').files[0]||p.pdf){const note=document.createElement('p');note.textContent='PDF attachment included.';box.append(note);}
     $('preview').hidden=false;
   }
@@ -76,7 +77,7 @@
     await api(base()+'/git/refs/heads/'+encodeURIComponent(session.branch),{method:'PATCH',body:JSON.stringify({sha:created.sha,force:false})});
     session.head=created.sha;
   }
-  function fileBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Could not read PDF.'));reader.readAsDataURL(file);});}
+  function fileBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Could not read the attachment.'));reader.readAsDataURL(file);});}
   $('connect').addEventListener('click',async()=>{
     const owner=$('owner').value.trim(),repo=$('repository').value.trim(),token=$('token').value.trim();
     if(!/^[a-zA-Z0-9-]+$/.test(owner)||!/^[a-zA-Z0-9_.-]+$/.test(repo)||!token){status('Enter your GitHub username, repository name, and publishing token.');return;}
@@ -92,20 +93,89 @@
       if(published.pathname!=='/')throw new Error('This editor expects the website at the root address. Rename your repository to match your GitHub username followed by .github.io first.');
       if(!pages.source || pages.source.path!=='/')throw new Error('Set GitHub Pages to deploy from a branch with the /(root) folder before connecting.');
       session.branch=pages.source.branch||info.default_branch;session.origin=published.origin;
-      const snap=await snapshot();papers=await loadIndex(snap);session.head=snap.head;list();
+      const snap=await snapshot();papers=await loadIndex(snap);session.head=snap.head;list();renderFigures();
       $('connection').open=false;$('disconnect').hidden=false;status('Connected. Changes publish to '+session.origin+'.');
     }catch(error){session=null;papers=[];list();fail(error);}finally{setBusy(false);}
   });
   $('disconnect').addEventListener('click',()=>{session=null;papers=[];$('token').value='';$('disconnect').hidden=true;$('connection').open=true;list();permissions();status('Disconnected. Publishing credentials have been cleared. Your current draft remains in this tab.');});
   $('new').addEventListener('click',()=>{if(dirty&&!confirm('Start a new paper? Download your current draft first if you want to keep it.'))return;loadPaper(null);});
   $('papers').addEventListener('change',()=>{if(dirty&&!confirm('Load another paper and replace the current unsaved draft?')){$('papers').value=selected?.url||'';return;}loadPaper(papers.find(p=>p.url===$('papers').value));});
-  $('paper-form').addEventListener('input',()=>{dirty=true;});
+  $('paper-form').addEventListener('input',event=>{if(!['import-draft','figure-upload'].includes(event.target.id))dirty=true;$('preview').hidden=true;});
   $('preview-button').addEventListener('click',()=>{try{showPreview(collect());status('Preview only. Nothing has been published.');}catch(e){fail(e);}});
-  $('download-draft').addEventListener('click',()=>{
-    const draft={version:1,title:$('title').value,date:$('date').value,summary:$('summary').value,body:$('body').value,topics:$('topics').value.split(',').map(x=>x.trim()).filter(Boolean)};
-    const blob=new Blob([JSON.stringify(draft,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='research-draft.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Draft downloaded. PDF attachments must be attached again when you reopen a draft.');
+
+  function imagePrefix(){return (session?.origin||location.origin)+'/';}
+  function renderFigures(){
+    const list=$('figure-list');list.replaceChildren();
+    figures.forEach((f,i)=>{
+      const card=document.createElement('div');card.className='figure-card';
+      const heading=document.createElement('h3');heading.textContent='Image '+(i+1);
+      const img=document.createElement('img');img.src=core.figureSource(f.src,imagePrefix());img.alt=f.alt;
+      const capLabel=document.createElement('label');capLabel.textContent='Caption / source';
+      const caption=document.createElement('textarea');caption.rows=3;caption.maxLength=4000;caption.value=f.caption;
+      caption.addEventListener('input',()=>{f.caption=caption.value;dirty=true;});capLabel.append(caption);
+      const altLabel=document.createElement('label');altLabel.textContent='Image description (for screen readers)';
+      const alt=document.createElement('textarea');alt.rows=2;alt.maxLength=2000;alt.value=f.alt;
+      alt.addEventListener('input',()=>{f.alt=alt.value;img.alt=f.alt;dirty=true;});altLabel.append(alt);
+      const actions=document.createElement('div');actions.className='figure-actions';
+      const place=document.createElement('button');place.type='button';place.textContent='Place at cursor';
+      place.addEventListener('click',()=>{
+        if(busy)return;
+        const body=$('body'),marker='[[figure:'+f.id+']]';let at=body.selectionStart;let start=body.value.indexOf(marker);while(start!==-1){if(at>start&&at<start+marker.length){at=start;break;}start=body.value.indexOf(marker,start+marker.length);}const before=body.value.slice(0,at).split(marker).join(''),after=body.value.slice(at).split(marker).join('');
+        body.value=before+'\n\n'+marker+'\n\n'+after;body.focus();body.setSelectionRange(before.length+marker.length+4,before.length+marker.length+4);dirty=true;$('preview').hidden=true;
+      });
+      const remove=document.createElement('button');remove.type='button';remove.textContent='Remove image';
+      remove.addEventListener('click',()=>{if(busy)return;if(!confirm('Remove this image and its placement from the draft?'))return;figures=figures.filter(x=>x.id!==f.id);$('body').value=$('body').value.split('[[figure:'+f.id+']]').join('');dirty=true;renderFigures();$('preview').hidden=true;});
+      actions.append(place,remove);card.append(heading,img,capLabel,altLabel,actions);list.append(card);
+    });
+  }
+  $('figure-upload').addEventListener('change',async()=>{
+    if(busy)return;
+    const files=[...$('figure-upload').files];if(!files.length)return;
+    setBusy(true);
+    try{
+      if(figures.length+files.length>10)throw new Error('Use no more than 10 images per article.');
+      const added=[];
+      for(const file of files){
+        if(file.size>5*1024*1024||!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Choose PNG, JPEG, or WebP images no larger than 5 MB each.');
+        const src='data:'+file.type+';base64,'+await fileBase64(file);core.imageInfo(src);
+        const img=new Image();img.src=src;await img.decode();
+        if(img.naturalWidth*img.naturalHeight>40000000)throw new Error('Resize this image to fewer than 40 million pixels before uploading.');
+        added.push({id:'image-'+crypto.randomUUID(),src,caption:'',alt:file.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ')});
+      }
+      figures=core.validateFigures([...figures,...added]);
+      $('body').value+='\n\n'+added.map(f=>'[[figure:'+f.id+']]').join('\n\n');
+      renderFigures();dirty=true;$('preview').hidden=true;status('Images added. Edit their captions, then Preview to see them in your article.');
+    }catch(e){fail(e);}finally{$('figure-upload').value='';setBusy(false);}
   });
-  $('import-draft').addEventListener('change',async()=>{try{const f=$('import-draft').files[0];if(!f)return;if(f.size>2*1024*1024)throw new Error('Draft file is too large.');const d=JSON.parse(await f.text());for(const k of ['title','date','summary','body'])if(typeof d[k]!=='string')throw new Error('Invalid draft file.');if(!Array.isArray(d.topics)||!d.topics.every(x=>typeof x==='string'))throw new Error('Invalid draft topics.');loadPaper(null);for(const k of ['title','date','summary','body'])$(k).value=d[k];$('topics').value=d.topics.join(', ');dirty=true;status('Draft opened. Add a PDF again if needed.');}catch(e){fail(e);}finally{$('import-draft').value='';}});
+  $('download-draft').addEventListener('click',async()=>{
+    if(busy)return;
+    const draft={version:2,title:$('title').value,date:$('date').value,summary:$('summary').value,body:$('body').value,topics:$('topics').value.split(',').map(x=>x.trim()).filter(Boolean),figures:core.validateFigures(figures)};
+    setBusy(true);status('Preparing your draft, including its images…');
+    try{
+      for(const f of draft.figures){
+        if(core.imagePath.test(f.src)){
+          const response=await fetch(imagePrefix()+f.src,{redirect:'error',credentials:'omit'});
+          if(!response.ok)throw new Error('An image is not available yet. Wait for the website update, then download your draft again.');
+          const ext=f.src.split('.').pop(),mime=ext==='jpg'?'jpeg':ext;
+          const blob=await response.blob();if(blob.size>5*1024*1024)throw new Error('The saved image is too large.');
+          f.src='data:image/'+mime+';base64,'+await fileBase64(blob);
+        }
+      }
+      core.validateFigures(draft.figures);
+      const blob=new Blob([JSON.stringify(draft,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='research-draft.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Draft downloaded with images and captions. Attach your PDF again when reopening it.');
+    }catch(e){fail(e);}finally{setBusy(false);}
+  });
+  $('import-draft').addEventListener('change',async()=>{
+    if(busy)return;
+    try{
+      const f=$('import-draft').files[0];if(!f)return;if(f.size>30*1024*1024)throw new Error('Draft file is too large (maximum 30 MB).');
+      const d=JSON.parse(await f.text());for(const k of ['title','date','summary','body'])if(typeof d[k]!=='string')throw new Error('Invalid draft file.');
+      if(!Array.isArray(d.topics)||!d.topics.every(x=>typeof x==='string'))throw new Error('Invalid draft topics.');
+      const imported=core.validatePlacement(d);
+      if(dirty&&!confirm('Replace your current draft? Download it first if you want to keep it.'))return;
+      loadPaper(null);for(const k of ['title','date','summary','body'])$(k).value=d[k];$('topics').value=d.topics.join(', ');figures=imported;renderFigures();dirty=true;status('Draft opened with '+figures.length+' images. Preview to see the graphs. Attach a PDF if needed.');
+    }catch(e){fail(e);}finally{$('import-draft').value='';}
+  });
   $('paper-form').addEventListener('submit',async event=>{
     event.preventDefault();if(busy||!session)return;
     try{
@@ -119,6 +189,12 @@
       if(!/^[a-z0-9-]+$/.test(slug))throw new Error('The paper address is not valid.');
       paper.url='research/'+slug+'.html';const files=[];
       if(file){paper.pdf='papers/'+slug+'.pdf';files.push({path:paper.pdf,base64:await fileBase64(file)});}
+      paper.figures=core.validatePlacement(paper).map(f=>{
+        if(core.imagePath.test(f.src))return f;
+        const image=core.imageInfo(f.src),path='assets/research-images/'+slug+'/'+f.id+'.'+image.extension;
+        files.push({path,base64:image.base64});return {...f,src:path};
+      });
+      paper.format=paper.figures.length?'illustrated-editor-v2':'text';
       const next=[paper,...latest.filter(p=>p.url!==paper.url)].sort((a,b)=>b.date.localeCompare(a.date));
       files.push({path:paper.url,text:core.article(paper,session.origin)},{path:'assets/research-data.js',text:'window.ledgerResearch = '+JSON.stringify(next,null,2)+';\n'},{path:'sitemap.xml',text:core.sitemap(next,session.origin)},{path:'robots.txt',text:'User-agent: *\nAllow: /\nDisallow: /admin.html\nSitemap: '+session.origin+'/sitemap.xml\n'});
       status('Publishing your paper…');await commit(files,snap,'Publish research: '+paper.title);papers=next;list();loadPaper(paper);status('Saved successfully. GitHub Pages is publishing the update; allow a few minutes for it to appear.');result('Your paper has been saved.',paper.url);
