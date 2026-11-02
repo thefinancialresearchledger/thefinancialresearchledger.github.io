@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
-Sitemap: https://thefinancialresearchledger.github.io/sitemap.xml
+Sitemap: https://the-financial-research-ledger.com/sitemap.xml
