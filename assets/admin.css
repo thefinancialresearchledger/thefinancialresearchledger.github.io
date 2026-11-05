@@ -2,3 +2,19 @@
 
 /* Illustrated editor and public article figures. */
 .figure-manager{border-top:1px solid var(--line);margin:30px 0;padding-top:12px}.figure-manager h2{margin-bottom:8px}.figure-card{border:1px solid var(--line);padding:18px;background:#fffdf8;margin:18px 0}.figure-card h3{margin:0 0 12px;font-size:22px}.figure-card>img{display:block;max-width:100%;max-height:260px;object-fit:contain;margin:auto}.figure-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.article-figure{margin:32px 0;padding:0;width:100%;break-inside:avoid}.article-figure img{display:block;width:100%;height:auto;background:#faf6ee}.article-figure figcaption{font-size:16px;line-height:1.5;color:var(--muted);margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere}.editor-grid>section{min-width:0}#preview-content{min-width:0}
+<<<<<<< HEAD
+
+/* Rich article editor, matching the published text. */
+.format-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;background:var(--beige);border:1px solid var(--line);padding:12px;margin-top:7px}.format-toolbar label{font-size:14px;margin:0}.format-toolbar select{padding:7px;min-width:76px}.format-toolbar input[type=color]{height:37px;width:48px;padding:3px}.format-toolbar button{padding:8px 11px;min-height:38px}.format-toolbar button[aria-pressed=true]{background:var(--camel);box-shadow:inset 0 0 0 1px var(--ink)}.rich-body{background:#fffdf8;min-height:380px;max-height:720px;overflow:auto;padding:20px;border:1px solid var(--line);border-top:0;font-size:18px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}.rich-body:focus{outline:2px solid var(--camel);outline-offset:1px}.rich-body p,.rich-body div{margin:0 0 1em}.rich-body:empty:before{content:'Write or paste your article here…';color:var(--muted);pointer-events:none}.rich-body ul,.rich-body ol,.article-body ul,.article-body ol{padding-left:1.6em;margin:1em 0}.rich-body ul,.article-body ul{list-style:disc}.rich-body ol,.article-body ol{list-style:decimal}.article-body li,.rich-body li{margin:.3em 0;white-space:pre-wrap}.article-body div{white-space:pre-wrap}.article-body{font-size:18px;line-height:1.65}.article-body span{line-height:inherit}#format-toolbar button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* Financial Research Ledger: editorial color swatches */
+.ledger-palette{display:flex;align-items:center;flex-wrap:wrap;gap:7px;width:100%;padding:10px 0 2px;border-top:1px solid var(--line);margin-top:4px}
+.ledger-palette-title{font-family:inherit;font-size:14px;color:var(--muted);margin-right:8px;min-width:66px}
+.format-toolbar .ledger-swatch{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;min-height:27px;padding:0;border:1px solid #a58e75;border-radius:50%;background:var(--swatch-color);flex:0 0 27px;box-shadow:0 0 0 2px #fffdf8}
+.format-toolbar .ledger-swatch[aria-pressed="true"]{outline:2px solid #35291f;outline-offset:2px;box-shadow:0 0 0 2px #fffdf8}
+.format-toolbar .ledger-swatch:hover{transform:scale(1.1)}
+.format-toolbar .ledger-format-bold{font-weight:700}
+.format-toolbar .ledger-format-underline{text-decoration:underline}
+@media(max-width:720px){.ledger-palette-title{width:100%}}
+=======
+>>>>>>> parent of 0649eb5 (Editor Revise)
