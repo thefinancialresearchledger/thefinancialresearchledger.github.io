@@ -1,1 +1,551 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src https://api.github.com; img-src 'self' data:; frame-src 'none'; base-uri 'none'; form-action 'none'"><title>Owner editor | The Financial Research Ledger</title><link rel="stylesheet" href="assets/style.css"><link rel="stylesheet" href="assets/admin.css?v=editor-20261105"></head><body><header><div class="wrap top"><a class="brand" href="index.html">The Financial<br>Research Ledger</a><nav aria-label="Editor navigation"><a href="index.html">View website ↗</a><button id="disconnect" hidden>Disconnect</button></nav></div></header><main class="wrap editor"><p class="eyebrow">Owner workspace</p><h1>Write. Review. Publish.</h1><p>Publish research and update your introduction here. Your website saves changes to GitHub in the background.</p><details id="connection" open><summary>Connect publishing</summary><div class="connection-grid"><label>GitHub username<input id="owner" autocomplete="username" value="thefinancialresearchledger" required></label><label>Website repository<input id="repository" value="thefinancialresearchledger.github.io" required></label><label class="full">Publishing token<input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your GitHub fine-grained token here"></label></div><p class="help">Use a token restricted to this website repository, with Contents: Read and write. It is sent only to GitHub and kept in memory until you disconnect or close this page. Never share it in chat.</p><p><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a publishing token ↗</a> · <a href="EDITOR-SETUP.md" target="_blank" rel="noopener noreferrer">Setup instructions</a></p><button class="button" id="connect">Connect website</button></details><p id="status" role="status" aria-live="polite">Not connected. You can write, preview, and download a draft before connecting.</p><div class="editor-grid"><aside><h2>Your research</h2><button id="new" class="button">New paper</button><label>Published papers<select id="papers"><option value="">Connect to load papers</option></select></label><hr><h2>Website introduction</h2><p class="help">Update the biography on your About page.</p><button id="load-bio">Edit introduction</button></aside><section><form id="paper-form"><label>Paper title<input id="title" required maxlength="180" placeholder="Your research title"></label><div class="two"><label>Publication date<input id="date" type="date" required></label><label>Topics, separated by commas<input id="topics" placeholder="Macro finance, Markets"></label></div><label>Short summary<textarea id="summary" rows="3" required maxlength="2000" placeholder="Explain the research question and your main findings."></textarea></label><label id="article-text-label" for="rich-body">Article text</label><div id="format-toolbar" class="format-toolbar" role="toolbar" aria-label="Article formatting"><label for="font-family">Font<select id="font-family"><option>Garamond</option><option>EB Garamond</option><option selected>Georgia</option><option>Times New Roman</option><option>Arial</option><option>Helvetica</option><option>Verdana</option><option>Courier New</option></select></label><label for="font-size">Size<select id="font-size"><option value="12">12 px</option><option value="14">14 px</option><option value="16">16 px</option><option value="18" selected>18 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option><option value="40">40 px</option></select></label><button type="button" data-command="bold" data-toggle aria-pressed="false" aria-label="Bold" title="Bold"><strong>B</strong></button><button type="button" data-command="underline" data-toggle aria-pressed="false" aria-label="Underline" title="Underline"><u>U</u></button><label for="font-color">Custom color<input id="font-color" type="color" value="#35291f"></label><button id="apply-color" type="button">Apply color</button></div><div id="rich-body" class="rich-body" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="article-text-label" spellcheck="true"></div><textarea id="body" hidden aria-hidden="true" tabindex="-1"></textarea><p class="help">Separate paragraphs with a blank line. Add graphs below; their figure markers show where they appear in the article. You can also attach a PDF.</p><section class="figure-manager" aria-labelledby="figures-heading"><h2 id="figures-heading">Graphs &amp; images</h2><p class="help">Choose PNG, JPEG, or WebP images (up to 5 MB each, 10 images, 20 MB total). Each image is placed at the end of your article. To move it, place your cursor in the text and click its “Place at cursor” button. Captions and image descriptions are saved with your draft.</p><label>Add graphs or images<input id="figure-upload" type="file" accept="image/png,image/jpeg,image/webp" multiple></label><div id="figure-list"></div></section><label>PDF attachment (optional, up to 10 MB)<input id="pdf" type="file" accept="application/pdf,.pdf"></label><p id="pdf-note" class="help"></p><div class="toolbar"><button type="button" id="preview-button">Preview</button><button type="button" id="download-draft">Download draft</button><label class="file-button">Open draft<input id="import-draft" type="file" accept=".json,application/json"></label><button type="submit" class="button" id="publish" disabled>Publish paper</button><button type="button" id="delete-paper" hidden>Delete paper</button></div></form><section id="bio-panel" hidden><h2>Edit your introduction</h2><label>About page biography<textarea id="biography" rows="14"></textarea></label><p class="help">Separate paragraphs with a blank line.</p><button id="save-bio" class="button" disabled>Publish introduction</button><button id="back-paper">Back to research</button></section><section id="preview" hidden aria-label="Article preview"><p class="eyebrow">Preview · not published</p><div id="preview-content"></div></section><p id="publish-result"></p></section></div></main><script src="assets/editor-core.js?v=figures-20261101"></script><script src="assets/rich-text.js?v=editor-20261105"></script><script src="assets/admin.js?v=editor-20261105"></script></body></html>
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src https://api.github.com; img-src 'self' data:; frame-src 'none'; base-uri 'none'; form-action 'none'"
+  >
+
+  <title>Owner editor | The Financial Research Ledger</title>
+
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/admin.css?v=editor-20261105-size2">
+</head>
+
+<body>
+
+  <header>
+    <div class="wrap top">
+
+      <a class="brand" href="index.html">
+        The Financial<br>
+        Research Ledger
+      </a>
+
+      <nav aria-label="Editor navigation">
+        <a href="index.html">View website ↗</a>
+        <button id="disconnect" hidden>Disconnect</button>
+      </nav>
+
+    </div>
+  </header>
+
+  <main class="wrap editor">
+
+    <p class="eyebrow">Owner workspace</p>
+
+    <h1>Write. Review. Publish.</h1>
+
+    <p>
+      Publish research and update your introduction here.
+      Your website saves changes to GitHub in the background.
+    </p>
+
+    <!-- GitHub connection -->
+
+    <details id="connection" open>
+
+      <summary>Connect publishing</summary>
+
+      <div class="connection-grid">
+
+        <label>
+          GitHub username
+          <input
+            id="owner"
+            autocomplete="username"
+            value="thefinancialresearchledger"
+            required
+          >
+        </label>
+
+        <label>
+          Website repository
+          <input
+            id="repository"
+            value="thefinancialresearchledger.github.io"
+            required
+          >
+        </label>
+
+        <label class="full">
+          Publishing token
+          <input
+            id="token"
+            type="password"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Paste your GitHub fine-grained token here"
+          >
+        </label>
+
+      </div>
+
+      <p class="help">
+        Use a token restricted to this website repository,
+        with Contents: Read and write.
+        It is sent only to GitHub and kept in memory until
+        you disconnect or close this page.
+        Never share it in chat.
+      </p>
+
+      <p>
+        <a
+          href="https://github.com/settings/personal-access-tokens/new"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Create a publishing token ↗
+        </a>
+
+        ·
+
+        <a
+          href="EDITOR-SETUP.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Setup instructions
+        </a>
+      </p>
+
+      <button
+        class="button"
+        id="connect"
+        type="button"
+      >
+        Connect website
+      </button>
+
+    </details>
+
+    <p id="status" role="status" aria-live="polite">
+      Not connected. You can write, preview, and download
+      a draft before connecting.
+    </p>
+
+    <div class="editor-grid">
+
+      <!-- Sidebar -->
+
+      <aside>
+
+        <h2>Your research</h2>
+
+        <button
+          id="new"
+          class="button"
+          type="button"
+        >
+          New paper
+        </button>
+
+        <label>
+          Published papers
+
+          <select id="papers">
+            <option value="">Connect to load papers</option>
+          </select>
+        </label>
+
+        <hr>
+
+        <h2>Website introduction</h2>
+
+        <p class="help">
+          Update the biography on your About page.
+        </p>
+
+        <button id="load-bio" type="button">
+          Edit introduction
+        </button>
+
+      </aside>
+
+      <!-- Main editor -->
+
+      <section>
+
+        <form id="paper-form">
+
+          <label>
+            Paper title
+
+            <input
+              id="title"
+              required
+              maxlength="180"
+              placeholder="Your research title"
+            >
+          </label>
+
+          <div class="two">
+
+            <label>
+              Publication date
+
+              <input
+                id="date"
+                type="date"
+                required
+              >
+            </label>
+
+            <label>
+              Topics, separated by commas
+
+              <input
+                id="topics"
+                placeholder="Macro finance, Markets"
+              >
+            </label>
+
+          </div>
+
+          <label>
+            Short summary
+
+            <textarea
+              id="summary"
+              rows="3"
+              required
+              maxlength="2000"
+              placeholder="Explain the research question and your main findings."
+            ></textarea>
+          </label>
+
+          <!-- Rich text editor -->
+
+          <label id="article-text-label" for="rich-body">
+            Article text
+          </label>
+
+          <div
+            id="format-toolbar"
+            class="format-toolbar"
+            role="toolbar"
+            aria-label="Article formatting"
+          >
+
+            <!-- Font family -->
+
+            <label for="font-family">
+              Font
+
+              <select id="font-family">
+                <option>Garamond</option>
+                <option>EB Garamond</option>
+                <option selected>Georgia</option>
+                <option>Times New Roman</option>
+                <option>Arial</option>
+                <option>Helvetica</option>
+                <option>Verdana</option>
+                <option>Courier New</option>
+              </select>
+
+            </label>
+
+            <!-- Exact font size + dropdown -->
+
+            <div class="ledger-size-control">
+
+              <label for="font-size">
+                Size
+              </label>
+
+              <div class="ledger-size-row">
+
+                <input
+                  id="font-size"
+                  type="number"
+                  min="10"
+                  max="72"
+                  step="1"
+                  value="18"
+                  inputmode="numeric"
+                  aria-label="Exact font size in pixels"
+                  title="Type an exact font size between 10 and 72 pixels"
+                >
+
+                <select
+                  id="font-size-presets"
+                  aria-label="Choose a preset font size"
+                  title="Choose a preset font size"
+                >
+                  <option value="" selected>▼</option>
+                  <option value="10">10 px</option>
+                  <option value="12">12 px</option>
+                  <option value="14">14 px</option>
+                  <option value="16">16 px</option>
+                  <option value="18">18 px</option>
+                  <option value="20">20 px</option>
+                  <option value="24">24 px</option>
+                  <option value="28">28 px</option>
+                  <option value="32">32 px</option>
+                  <option value="36">36 px</option>
+                  <option value="40">40 px</option>
+                  <option value="48">48 px</option>
+                  <option value="60">60 px</option>
+                  <option value="72">72 px</option>
+                </select>
+
+              </div>
+
+            </div>
+
+            <!-- Bold -->
+
+            <button
+              type="button"
+              class="ledger-format-bold"
+              data-command="bold"
+              data-toggle
+              aria-pressed="false"
+              aria-label="Bold"
+              title="Bold"
+            >
+              <strong>B</strong>
+            </button>
+
+            <!-- Underline -->
+
+            <button
+              type="button"
+              class="ledger-format-underline"
+              data-command="underline"
+              data-toggle
+              aria-pressed="false"
+              aria-label="Underline"
+              title="Underline"
+            >
+              <u>U</u>
+            </button>
+
+            <!-- Custom color -->
+
+            <label for="font-color">
+              Custom color
+
+              <input
+                id="font-color"
+                type="color"
+                value="#35291f"
+              >
+            </label>
+
+            <button
+              id="apply-color"
+              type="button"
+            >
+              Apply color
+            </button>
+
+            <!-- The 10-color palette is generated
+                 by assets/rich-text.js -->
+
+          </div>
+
+          <!-- Editable writing area -->
+
+          <div
+            id="rich-body"
+            class="rich-body"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            aria-labelledby="article-text-label"
+            spellcheck="true"
+          ></div>
+
+          <!-- Hidden plain-text field used by publishing -->
+
+          <textarea
+            id="body"
+            hidden
+            aria-hidden="true"
+            tabindex="-1"
+          ></textarea>
+
+          <p class="help">
+            Highlight text to change its font, size,
+            bold formatting, underline, or color.
+            Type an exact size or choose from the dropdown.
+            Separate paragraphs with a blank line.
+            You can also add graphs and attach a PDF.
+          </p>
+
+          <!-- Figures -->
+
+          <section
+            class="figure-manager"
+            aria-labelledby="figures-heading"
+          >
+
+            <h2 id="figures-heading">
+              Graphs &amp; images
+            </h2>
+
+            <p class="help">
+              Choose PNG, JPEG, or WebP images
+              (up to 5 MB each, 10 images, 20 MB total).
+              Each image is placed at the end of your article.
+              To move it, place your cursor in the text and
+              click its "Place at cursor" button.
+              Captions and image descriptions are saved
+              with your draft.
+            </p>
+
+            <label>
+              Add graphs or images
+
+              <input
+                id="figure-upload"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+              >
+            </label>
+
+            <div id="figure-list"></div>
+
+          </section>
+
+          <!-- PDF attachment -->
+
+          <label>
+            PDF attachment (optional, up to 10 MB)
+
+            <input
+              id="pdf"
+              type="file"
+              accept="application/pdf,.pdf"
+            >
+          </label>
+
+          <p id="pdf-note" class="help"></p>
+
+          <!-- Publishing toolbar -->
+
+          <div class="toolbar">
+
+            <button
+              type="button"
+              id="preview-button"
+            >
+              Preview
+            </button>
+
+            <button
+              type="button"
+              id="download-draft"
+            >
+              Download draft
+            </button>
+
+            <label class="file-button">
+              Open draft
+
+              <input
+                id="import-draft"
+                type="file"
+                accept=".json,application/json"
+              >
+            </label>
+
+            <button
+              type="submit"
+              class="button"
+              id="publish"
+              disabled
+            >
+              Publish paper
+            </button>
+
+            <button
+              type="button"
+              id="delete-paper"
+              hidden
+            >
+              Delete paper
+            </button>
+
+          </div>
+
+        </form>
+
+        <!-- Biography editor -->
+
+        <section id="bio-panel" hidden>
+
+          <h2>Edit your introduction</h2>
+
+          <label>
+            About page biography
+
+            <textarea
+              id="biography"
+              rows="14"
+            ></textarea>
+          </label>
+
+          <p class="help">
+            Separate paragraphs with a blank line.
+          </p>
+
+          <button
+            id="save-bio"
+            class="button"
+            type="button"
+            disabled
+          >
+            Publish introduction
+          </button>
+
+          <button
+            id="back-paper"
+            type="button"
+          >
+            Back to research
+          </button>
+
+        </section>
+
+        <!-- Article preview -->
+
+        <section
+          id="preview"
+          hidden
+          aria-label="Article preview"
+        >
+
+          <p class="eyebrow">
+            Preview · not published
+          </p>
+
+          <div id="preview-content"></div>
+
+        </section>
+
+        <p id="publish-result"></p>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Editor scripts: loading order matters -->
+
+  <script src="assets/editor-core.js?v=figures-20261101"></script>
+  <script src="assets/rich-text.js?v=editor-20261105-size2"></script>
+  <script src="assets/admin.js?v=editor-20261105"></script>
+
+</body>
+</html>
+
