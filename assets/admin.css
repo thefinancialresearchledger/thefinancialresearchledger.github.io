@@ -16,5 +16,39 @@
 .format-toolbar .ledger-format-bold{font-weight:700}
 .format-toolbar .ledger-format-underline{text-decoration:underline}
 @media(max-width:720px){.ledger-palette-title{width:100%}}
-=======
->>>>>>> parent of 0649eb5 (Editor Revise)
+
+
+/* Exact font size input and dropdown */
+
+.ledger-size-control {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 8px 0 14px;
+}
+
+.ledger-size-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.format-toolbar .ledger-size-row input {
+  width: 90px;
+  min-height: 42px;
+  padding: 8px 10px;
+  background: #fffdf8;
+  border: 1px solid #c5a27e;
+  color: #35291f;
+}
+
+.format-toolbar .ledger-size-row select {
+  width: 74px;
+  min-width: 74px;
+  min-height: 42px;
+  padding: 8px;
+  background: #e9ddcc;
+  border: 1px solid #c5a27e;
+  color: #35291f;
+  cursor: pointer;
+}
